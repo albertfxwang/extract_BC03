@@ -1,4 +1,4 @@
-import pyfits
+import astropy.io.fits as pyfits
 import numpy as np
 
 line_ratios = pyfits.getdata('emline_ratios.fits')

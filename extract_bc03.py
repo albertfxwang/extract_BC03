@@ -16,7 +16,7 @@ class TemplateSED_BC03(object):
                  sfr=1, gasrecycle=False, epsilon=0.001, tcutsfr=20,
                  units='flambda', W1=1, W2=1e7,
                  imf='chab', res='hr', uid=None,
-                 rootdir='galaxev/', library_version=2003, library='stelib',
+                 rootdir='galaxev/', modelsdir='galaxevModels/', library_version=2003, library='stelib',
                  workdir=None, cleanup=True, verbose=True):
 
         """
@@ -50,15 +50,17 @@ class TemplateSED_BC03(object):
                             - 'lr':         Low resolution
         uid:             Unique ID for the SED
         rootdir:         Root directory for the GALAXEv installation
+        modelsdir:       Root directory for model atlases
         workdir:         Working directory to store temporary files
         library_version: Specify which version of BC03 -- 2003, 2012
-        library:         Specify specific library (only valid for 2012 version) -- 'stelib','BaSeL'
+        library:         Specify specific library (only valid for 2012(16) version) -- 'stelib','BaSeL', 'miles'
         input_ised:      Option to directly specify what input ISED file to use
         cleanup:         Cleanup the temporary files?
         verbose:         Print messages to terminal?
         """
 
         self.sfh_key = {'ssp':0,'exp':1,'single':2,'constant':3}
+        self.library_atlas_key = {'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
         self.imf_dir_key = {'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
         self.metallicity_key = {0.0001:'m22',0.0004:'m32',0.004:'m42',0.008:'m52',0.02:'m62',0.05:'m72',0.1:'m82'}
         self.inv_metallicity_key = dict([[v,k] for k,v in self.metallicity_key.items()])
@@ -80,6 +82,7 @@ class TemplateSED_BC03(object):
         self.W1          = W1
         self.W2          = W2
         self.rootdir     = rootdir
+        self.modelsdir   = modelsdir
         self.library     = library
         self.library_version = library_version
 
@@ -104,13 +107,18 @@ class TemplateSED_BC03(object):
         elif not input_ised and self.library_version==2012:
             self.input_ised = 'bc2003_'+self.res+'_'+self.library+'_'+self.metallicity_key[self.metallicity]+'_'+self.imf+'_ssp'
 
-        self.model_dir = self.rootdir+'models/Padova1994/'+self.imf_dir_key[self.imf]+'/'
+        self.model_dir = self.modelsdir+'/'+self.library_atlas_key[self.library]+'/'+self.imf_dir_key[self.imf][0].upper() + self.imf_dir_key[self.imf][1:] +'_IMF/'
+
         self.workdir = workdir+'/' if workdir else os.getcwd()+'/'
         self.uid = uid
         self.ssp_output = self.uid+'_ssp'
         self.csp_output = self.uid+'_csp'
         self.cleanup = cleanup
         self.verbose = verbose
+        '''print ('MODEL DIR =>', self.model_dir)
+        print ('WORK DIR =>', self.workdir)
+        print ('ROOT DIR =>', self.rootdir)
+        print ('INPUT ISED =>', self.input_ised)'''
 
         self.define_env()
         self.mk_csp_input()
@@ -160,9 +168,9 @@ class TemplateSED_BC03(object):
         if self.library_version not in [2003,2012]:
             raise Exception("Invalid library_version: "+str(self.library_version)+"\n" \
                             "Please choose from: 2003,2012")
-        if self.library not in ['stelib','BaSeL']:
+        if self.library not in ['stelib','BaSeL', 'xmiless']:
             raise Exception("Incorrect library choice: "+str(self.library)+"\n" \
-                            "Please choose from: 'stelib','BaSeL'")
+                            "Please choose from: 'stelib','BaSeL', 'xmiless'")
 
     def define_env(self):
 
@@ -195,7 +203,6 @@ class TemplateSED_BC03(object):
         if self.redshift: self.redshift_evo()
 
     def do_bin_ised(self):
-
         if   os.path.isfile(self.model_dir+self.input_ised+'.ised'):
             shutil.copyfile(self.model_dir+self.input_ised+'.ised',
                             self.workdir+self.ssp_output+'.ised')
