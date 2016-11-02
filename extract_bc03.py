@@ -1,5 +1,6 @@
 import os, shutil, subprocess
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import warnings
 
@@ -52,8 +53,8 @@ class TemplateSED_BC03(object):
         rootdir:         Root directory for the GALAXEv installation
         modelsdir:       Root directory for model atlases
         workdir:         Working directory to store temporary files
-        library_version: Specify which version of BC03 -- 2003, 2012
-        library:         Specify specific library (only valid for 2012(16) version) -- 'stelib','BaSeL', 'miles'
+        library_version: Specify which version of BC03 -- 2003, 2012, 2016
+        library:         Specify specific library (only valid for 2012(16) version) -- 'stelib','BaSeL'(,'xmiless')
         input_ised:      Option to directly specify what input ISED file to use
         cleanup:         Cleanup the temporary files?
         verbose:         Print messages to terminal?
@@ -102,9 +103,9 @@ class TemplateSED_BC03(object):
         self.read_age_input()
         self.check_input()
 
-        if   not input_ised and self.library_version==2003:
+        if not input_ised and self.library_version==2003:
             self.input_ised = 'bc2003_'+self.res+'_'+self.metallicity_key[self.metallicity]+'_'+self.imf+'_ssp'
-        elif not input_ised and self.library_version==2012:
+        elif not input_ised and (self.library_version==2012 or self.library_version==2016):
             self.input_ised = 'bc2003_'+self.res+'_'+self.library+'_'+self.metallicity_key[self.metallicity]+'_'+self.imf+'_ssp'
 
         self.model_dir = self.modelsdir+'/'+self.library_atlas_key[self.library]+'/'+self.imf_dir_key[self.imf][0].upper() + self.imf_dir_key[self.imf][1:] +'_IMF/'
@@ -115,19 +116,19 @@ class TemplateSED_BC03(object):
         self.csp_output = self.uid+'_csp'
         self.cleanup = cleanup
         self.verbose = verbose
-        '''print ('MODEL DIR =>', self.model_dir)
-        print ('WORK DIR =>', self.workdir)
-        print ('ROOT DIR =>', self.rootdir)
-        print ('INPUT ISED =>', self.input_ised)'''
 
         self.define_env()
         self.mk_csp_input()
         self.mk_gpl_input()
 
     def read_age_input(self):
-
+        """
+        Verify that the requested number of SED ages is compatible with the range
+        that is supported by the specified library version. If sufficient SEDs can be
+        generated then store the specified ages (units Gyr) internally.
+        """
         if   self.library_version==2003: self.age_limit = 24
-        elif self.library_version==2012: self.age_limit = 100
+        elif self.library_version==2012 or self.library_version==2016: self.age_limit = 100
 
         if not (isinstance(self.age,np.ndarray) or isinstance(self.age,list)):
             self.ages = str(self.age)
@@ -139,7 +140,9 @@ class TemplateSED_BC03(object):
             raise Exception('Cannot provide more than %i ages!' % self.age_limit)
 
     def check_input(self):
-
+        """
+        Validate constructor arguments.
+        """
         if any(self.age > 13.5):
             raise Exception("SED age (%s) provided is older than the Universe (13.5 Gyr)!" % str(self.age))
         if self.sfh not in self.sfh_key.keys():
@@ -165,9 +168,9 @@ class TemplateSED_BC03(object):
                             "Please provide a positive value.")
         if self.redshift is None and self.igm:
             warnings.warn("No redshift provided, and thus IGM attentuation cannot be applied.")
-        if self.library_version not in [2003,2012]:
+        if self.library_version not in [2003,2012,2016]:
             raise Exception("Invalid library_version: "+str(self.library_version)+"\n" \
-                            "Please choose from: 2003,2012")
+                            "Please choose from: 2003,2012,2016")
         if self.library not in ['stelib','BaSeL', 'xmiless']:
             raise Exception("Incorrect library choice: "+str(self.library)+"\n" \
                             "Please choose from: 'stelib','BaSeL', 'xmiless'")
@@ -177,17 +180,24 @@ class TemplateSED_BC03(object):
         self.env_string = "export FILTERS="+self.rootdir+"src/FILTERBIN.RES;" \
                           "export A0VSED="+self.rootdir+"src/A0V_KURUCZ_92.SED;" \
                           "export RF_COLORS_ARRAYS="+self.rootdir+"src/RF_COLORS.filters;"
-        if self.library_version == 2012:
+        if self.library_version == 2012 or self.library_version == 2016 :
             self.env_string += "export SUNSED="+self.rootdir+"src/SUN_KURUCZ_92.SED;"
 
     def del_file(self,f):
-
+        """
+        Helper to safely delete files during cleanup.
+        """
         if os.path.isfile(f): os.remove(f)
 
     def generate_sed(self):
-
+        """
+        Main driver function that executes the required stages for SED generation and
+        initiates cleanup of auxilliary files if required.
+        """
+        # copy SED library file from atlas and convert from ASCII to binary if required.
         self.do_bin_ised()
 
+        #
         self.do_csp()
         if self.cleanup: self.csp_cleanup()
 
@@ -203,7 +213,12 @@ class TemplateSED_BC03(object):
         if self.redshift: self.redshift_evo()
 
     def do_bin_ised(self):
-        if   os.path.isfile(self.model_dir+self.input_ised+'.ised'):
+        """
+        Copy required SED model files from the model atlas directory and, if necessary
+        (the SEDs are provided as ASCII files) execute the bin_ised utility to convert them
+        to a binary format.
+        """
+        if os.path.isfile(self.model_dir+self.input_ised+'.ised'):
             shutil.copyfile(self.model_dir+self.input_ised+'.ised',
                             self.workdir+self.ssp_output+'.ised')
         elif os.path.isfile(self.model_dir+self.input_ised+'.ised_ASCII'):
@@ -220,7 +235,9 @@ class TemplateSED_BC03(object):
             raise Exception('Template %s not found in %s.' % (self.input_ised,self.model_dir))
 
     def mk_csp_input(self):
-
+        """
+        Generate input command line tokens for the csp (csp_galexev) utility.
+        """
         self.csp_input = {}
         self.csp_input['CSPINPUT'] = self.ssp_output
         self.csp_input['DUST'] = 'N'
@@ -234,10 +251,14 @@ class TemplateSED_BC03(object):
         self.csp_input['CSPOUTPUT'] = self.csp_output
 
     def do_csp(self):
-
+        """
+        Synthesize and invoke the command line for the csp (csp_galexev) utility.
+        This utility actually computes the spectral evolution of composite stellar
+        populations.
+        """
         csp_input_string =  self.csp_input['CSPINPUT'] + '\n'
         csp_input_string += self.csp_input['DUST'] +  '\n'
-        if self.library_version==2012:
+        if self.library_version==2012 or self.library_version==2016:
             csp_input_string += self.csp_input['REDSHIFT'] +  '\n'
         csp_input_string += self.csp_input['SFHCODE'] + '\n'
 
@@ -267,7 +288,10 @@ class TemplateSED_BC03(object):
         self.del_file(self.workdir+self.uid+'_csp.in')
 
     def csp_cleanup(self):
-
+        """
+        Remove any non-essential files that were generated by the csp (csp_galexev)
+        utility.
+        """
         self.del_file(self.workdir+self.csp_output+'.1ABmag')
         self.del_file(self.workdir+self.csp_output+'.1color')
         self.del_file(self.workdir+self.csp_output+'.2color')
@@ -281,7 +305,7 @@ class TemplateSED_BC03(object):
         self.del_file(self.workdir+self.csp_output+'.8lsindx_sed_fluxes')
         self.del_file(self.workdir+'bc03.rm')
 
-        if self.library_version==2012:
+        if self.library_version==2012 or self.library_version==2016:
             self.del_file(self.workdir+self.csp_output+'.9color')
             self.del_file(self.workdir+self.csp_output+'.acs_wfc_color')
             self.del_file(self.workdir+self.csp_output+'.legus_uvis1_color')
@@ -292,7 +316,9 @@ class TemplateSED_BC03(object):
             self.del_file(self.workdir+'fort.24')
 
     def mk_gpl_input(self):
-
+        """
+        Generate input command line tokens for the gpl (galaxevpl) utility.
+        """
         self.gpl_input = {}
         self.gpl_input['GPLINPUT'] = self.csp_output
         if   self.units == 'flambda':  self.gpl_input['W1W2W0F0Z'] =  str(self.W1)+','+str(self.W2)
@@ -301,13 +327,15 @@ class TemplateSED_BC03(object):
         self.gpl_input['GPLOUTPUT'] = self.csp_output+'.spec'
 
     def do_gpl(self):
-
+        """
+        Synthesize and invoke the command line for the gpl (galaxevpl) utility.
+        """
         gpl_input_string =  self.gpl_input['GPLINPUT'] + '\n'
 
         if self.library_version==2003:
             gpl_input_string += self.gpl_input['W1W2W0F0Z'] + '\n'
             gpl_input_string += self.gpl_input['AGES'] + '\n'
-        elif self.library_version==2012:
+        elif self.library_version==2012 or self.library_version==2016:
             gpl_input_string += self.gpl_input['AGES'] + '\n'
             gpl_input_string += self.gpl_input['W1W2W0F0Z'] + '\n'
 
@@ -323,12 +351,16 @@ class TemplateSED_BC03(object):
         self.del_file(self.workdir+self.uid+'_gpl.in')
 
     def gpl_cleanup(self):
-
+        """
+        Remove any non-essential files that were generated by the gpl (galaxevpl)
+        utility.
+        """
         self.del_file(self.workdir+self.ssp_output+'.ised')
         self.del_file(self.workdir+self.csp_output+'.ised')
 
     def read_gpl(self):
-
+        """
+        """
         dtype = [('waves',float),]+[('spec%i'%(i+1),float) for i in range(len(self.age))]
         self.sed = np.genfromtxt(self.workdir+self.csp_output+'.spec',dtype=dtype)
         age3, Q = np.genfromtxt(self.workdir+self.csp_output+'.3color', usecols=(0,5), unpack=True)
