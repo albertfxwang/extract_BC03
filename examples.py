@@ -18,15 +18,15 @@ def plot():
 
     cind = np.linspace(0.2,0.95,5)
     for x,c in zip(template.sed.dtype.names[1:],plt.cm.Greys(cind)):
-        ax.plot(template.sed['waves'],template.sed[x],c=c,lw=1.25,alpha=0.8)
+        ax.plot(template.sed['rest_wavelength'],template.sed[x],c=c,lw=1.25,alpha=0.8)
 
     template.add_emlines()
     for x,c in zip(template.sed.dtype.names[1:],plt.cm.Blues(cind)):
-        ax.plot(template.sed['waves'],template.sed[x],c=c,lw=1.25,alpha=0.8)
+        ax.plot(template.sed['rest_wavelength'],template.sed[x],c=c,lw=1.25,alpha=0.8)
 
     template.add_dust()
     for x,c in zip(template.sed.dtype.names[1:],plt.cm.Reds(cind)):
-        ax.plot(template.sed['waves'],template.sed[x],c=c,lw=1.25,alpha=0.8)
+        ax.plot(template.sed['rest_wavelength'],template.sed[x],c=c,lw=1.25,alpha=0.8)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
