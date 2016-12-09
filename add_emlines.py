@@ -1,7 +1,10 @@
 import astropy.io.fits as pyfits
 import numpy as np
+import os
 
-line_ratios = pyfits.getdata('emline_ratios.fits')
+extractBC03Root = os.getenv('BC03ROOT', '.')
+
+line_ratios = pyfits.getdata(extractBC03Root + '/emline_ratios.fits')
 
 # ADD EMISSION LINES
 def add_emission_lines(sed_waves, sed_spec, Q, metallicity, units):
