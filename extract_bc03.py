@@ -10,6 +10,11 @@ from igm_attenuation import inoue_tau
 
 class TemplateSED_BC03(object):
 
+    metallicity_key = {0.0001:'m22',0.0004:'m32',0.004:'m42',0.008:'m52',0.02:'m62',0.05:'m72',0.1:'m82'}
+    sfh_key = {'ssp':0,'exp':1,'single':2,'constant':3}
+    library_atlas_key = {'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
+    imf_dir_key = {'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+
     def __init__(self,
                  age, sfh, metallicity=None, input_ised=None,
                  tau=None, Av=None, emlines=False, dust='none',
@@ -60,10 +65,10 @@ class TemplateSED_BC03(object):
         verbose:         Print messages to terminal?
         """
 
-        self.sfh_key = {'ssp':0,'exp':1,'single':2,'constant':3}
-        self.library_atlas_key = {'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
-        self.imf_dir_key = {'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
-        self.metallicity_key = {0.0001:'m22',0.0004:'m32',0.004:'m42',0.008:'m52',0.02:'m62',0.05:'m72',0.1:'m82'}
+        self.sfh_key = TemplateSED_BC03.sfh_key{'ssp':0,'exp':1,'single':2,'constant':3}
+        self.library_atlas_key = TemplateSED_BC03.library_atlas_key{'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
+        self.imf_dir_key = TemplateSED_BC03.imf_dir_key{'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+        self.metallicity_key = TemplateSED_BC03.metallicity_key
         self.inv_metallicity_key = dict([[v,k] for k,v in self.metallicity_key.items()])
 
         self.res         = res
