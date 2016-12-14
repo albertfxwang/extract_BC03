@@ -65,9 +65,9 @@ class TemplateSED_BC03(object):
         verbose:         Print messages to terminal?
         """
 
-        self.sfh_key = TemplateSED_BC03.sfh_key{'ssp':0,'exp':1,'single':2,'constant':3}
-        self.library_atlas_key = TemplateSED_BC03.library_atlas_key{'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
-        self.imf_dir_key = TemplateSED_BC03.imf_dir_key{'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+        self.sfh_key = TemplateSED_BC03.sfh_key#{'ssp':0,'exp':1,'single':2,'constant':3}
+        self.library_atlas_key = TemplateSED_BC03.library_atlas_key#{'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
+        self.imf_dir_key = TemplateSED_BC03.imf_dir_key#{'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
         self.metallicity_key = TemplateSED_BC03.metallicity_key
         self.inv_metallicity_key = dict([[v,k] for k,v in self.metallicity_key.items()])
 
@@ -285,10 +285,11 @@ class TemplateSED_BC03(object):
 
         csp_input_string += self.csp_input['CSPOUTPUT'] + '\n'
 
-        print ('Input parameters for csp_galaxev:')
-        for key, value in self.csp_input.items() :
-            print ('{} => {}'.format(key, value))
-        print('\n')
+        if self.verbose:
+            print ('Input parameters for csp_galaxev:')
+            for key, value in self.csp_input.items() :
+                print ('{} => {}'.format(key, value))
+            print('\n')
 
         with open(self.workdir+self.uid+'_csp.in','w') as f: f.write(csp_input_string)
         if self.verbose:
@@ -353,10 +354,11 @@ class TemplateSED_BC03(object):
 
         gpl_input_string += self.gpl_input['GPLOUTPUT'] + '\n'
 
-        print ('Input string for galaxevpl:')
-        for key, value in self.gpl_input.items() :
-            print ('{} => {}'.format(key, value))
-        print('\n')
+        if self.verbose:
+            print ('Input string for galaxevpl:')
+            for key, value in self.gpl_input.items() :
+                print ('{} => {}'.format(key, value))
+            print('\n')
 
         with open(self.workdir+self.uid+'_gpl.in','w') as f: f.write(gpl_input_string)
         if self.verbose:
