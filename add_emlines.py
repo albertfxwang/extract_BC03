@@ -7,6 +7,8 @@ extractBC03Root = os.getenv('BC03ROOT', '.')
 line_ratios = pyfits.getdata(extractBC03Root + '/emline_ratios.fits')
 
 # ADD EMISSION LINES
+
+
 def add_emission_lines(sed_waves, sed_spec, Q, metallicity, units):
 
     l_hb = 4861.
@@ -26,14 +28,15 @@ def add_emission_lines(sed_waves, sed_spec, Q, metallicity, units):
     else:
         raise Exception('Incorrect metallicity provided in add_lines().')
 
-    line_centers = np.concatenate(([l_lya,l_hb,l_ha], line_ratios['LAMBDA'][0]))
-    line_lums = np.concatenate(([lum_lya,lum_hb,lum_ha], ratios*lum_hb))
+    line_centers = np.concatenate(([l_lya, l_hb, l_ha], line_ratios['LAMBDA'][0]))
+    line_lums = np.concatenate(([lum_lya, lum_hb, lum_ha], ratios * lum_hb))
 
-    sigma = 3 # Angs
+    sigma = 3  # Angs
 
-    for line_center,line_lum in zip(line_centers, line_lums):
+    for line_center, line_lum in zip(line_centers, line_lums):
 
-        line_prof = (1./np.sqrt(2*np.pi)/sigma) * np.exp(-0.5*(sed_waves - line_center)**2 / sigma**2)
+        line_prof = (1. / np.sqrt(2 * np.pi) / sigma) * \
+            np.exp(-0.5 * (sed_waves - line_center)**2 / sigma**2)
         line_prof = line_lum * line_prof
         if units == 'flambda':
             sed_spec = sed_spec + line_prof

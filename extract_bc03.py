@@ -1,4 +1,6 @@
-import os, shutil, subprocess
+import os
+import shutil
+import subprocess
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,12 +10,15 @@ from dust_extinction import calzetti
 from add_emlines import add_emission_lines
 from igm_attenuation import inoue_tau
 
+
 class TemplateSED_BC03(object):
 
-    metallicity_key = {0.0001:'m22',0.0004:'m32',0.004:'m42',0.008:'m52',0.02:'m62',0.05:'m72',0.1:'m82'}
-    sfh_key = {'ssp':0,'exp':1,'single':2,'constant':3}
-    library_atlas_key = {'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
-    imf_dir_key = {'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+    metallicity_key = {0.0001: 'm22', 0.0004: 'm32', 0.004: 'm42',
+                       0.008: 'm52', 0.02: 'm62', 0.05: 'm72', 0.1: 'm82'}
+    sfh_key = {'ssp': 0, 'exp': 1, 'single': 2, 'constant': 3}
+    library_atlas_key = {'stelib': 'Stelib_Atlas',
+                         'BaSeL': 'BaSeL3.1_Atlas', 'xmiless': 'Miles_Atlas'}
+    imf_dir_key = {'salp': 'salpeter', 'chab': 'chabrier', 'kroup': 'kroupa'}
 
     def __init__(self,
                  age, sfh, metallicity=None, input_ised=None,
@@ -24,7 +29,6 @@ class TemplateSED_BC03(object):
                  imf='chab', res='hr', uid=None,
                  rootdir='galaxev/', modelsdir='galaxevModels/', library_version=2003, library='stelib',
                  workdir=None, cleanup=True, verbose=True):
-
         """
         metallicity:     0.0001(m22), 0.0004(m32), 0.004(m42), 0.004(m52), 0.02(m62), 0.05(m72) [BC2003 option]
         age:             0 < age < 13.5 Gyr [BC2003 option]
@@ -65,38 +69,42 @@ class TemplateSED_BC03(object):
         verbose:         Print messages to terminal?
         """
 
-        self.sfh_key = TemplateSED_BC03.sfh_key#{'ssp':0,'exp':1,'single':2,'constant':3}
-        self.library_atlas_key = TemplateSED_BC03.library_atlas_key#{'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
-        self.imf_dir_key = TemplateSED_BC03.imf_dir_key#{'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+        self.sfh_key = TemplateSED_BC03.sfh_key  # {'ssp':0,'exp':1,'single':2,'constant':3}
+        # {'stelib' : 'Stelib_Atlas', 'BaSeL' : 'BaSeL3.1_Atlas', 'xmiless' : 'Miles_Atlas' }
+        self.library_atlas_key = TemplateSED_BC03.library_atlas_key
+        # {'salp':'salpeter','chab':'chabrier','kroup':'kroupa'}
+        self.imf_dir_key = TemplateSED_BC03.imf_dir_key
         self.metallicity_key = TemplateSED_BC03.metallicity_key
-        self.inv_metallicity_key = dict([[v,k] for k,v in self.metallicity_key.items()])
+        self.inv_metallicity_key = dict([[v, k] for k, v in self.metallicity_key.items()])
 
-        self.res         = res
-        self.age         = age
-        self.sfh         = sfh
-        self.sfr         = sfr
-        self.tau         = tau
-        self.gasrecycle  = gasrecycle
-        self.epsilon     = epsilon
-        self.tcutsfr     = tcutsfr
-        self.Av          = Av
-        self.emlines     = emlines
-        self.dust        = dust
-        self.redshift    = redshift
-        self.igm         = igm
-        self.units       = units
-        self.W1          = W1
-        self.W2          = W2
-        self.rootdir     = rootdir
-        self.modelsdir   = modelsdir
-        self.library     = library
+        self.res = res
+        self.age = age
+        self.sfh = sfh
+        self.sfr = sfr
+        self.tau = tau
+        self.gasrecycle = gasrecycle
+        self.epsilon = epsilon
+        self.tcutsfr = tcutsfr
+        self.Av = Av
+        self.emlines = emlines
+        self.dust = dust
+        self.redshift = redshift
+        self.igm = igm
+        self.units = units
+        self.W1 = W1
+        self.W2 = W2
+        self.rootdir = rootdir
+        self.modelsdir = modelsdir
+        self.library = library
         self.library_version = library_version
 
         self.sed = None
 
         if input_ised:
-            if ".ised" in input_ised: input_ised = input_ised[:-5]
-            warnings.warn('Ignoring IMF and Metallicity args and using provided input ISED file: %s' % input_ised)
+            if ".ised" in input_ised:
+                input_ised = input_ised[:-5]
+            warnings.warn(
+                'Ignoring IMF and Metallicity args and using provided input ISED file: %s' % input_ised)
             self.input_ised = input_ised
             self.imf = input_ised.split('_')[-2]
             self.metallicity = self.inv_metallicity_key[input_ised.split('_')[-3]]
@@ -110,17 +118,20 @@ class TemplateSED_BC03(object):
         self.read_age_input()
         self.check_input()
 
-        if not input_ised and self.library_version==2003:
-            self.input_ised = 'bc2003_'+self.res+'_'+self.metallicity_key[self.metallicity]+'_'+self.imf+'_ssp'
-        elif not input_ised and (self.library_version==2012 or self.library_version==2016):
-            self.input_ised = 'bc2003_'+self.res+'_'+self.library+'_'+self.metallicity_key[self.metallicity]+'_'+self.imf+'_ssp'
+        if not input_ised and self.library_version == 2003:
+            self.input_ised = 'bc2003_' + self.res + '_' + \
+                self.metallicity_key[self.metallicity] + '_' + self.imf + '_ssp'
+        elif not input_ised and (self.library_version == 2012 or self.library_version == 2016):
+            self.input_ised = 'bc2003_' + self.res + '_' + self.library + '_' + \
+                self.metallicity_key[self.metallicity] + '_' + self.imf + '_ssp'
 
-        self.model_dir = self.modelsdir+'/'+self.library_atlas_key[self.library]+'/'+self.imf_dir_key[self.imf][0].upper() + self.imf_dir_key[self.imf][1:] +'_IMF/'
+        self.model_dir = self.modelsdir + '/' + self.library_atlas_key[self.library] + '/' + self.imf_dir_key[
+            self.imf][0].upper() + self.imf_dir_key[self.imf][1:] + '_IMF/'
 
-        self.workdir = workdir+'/' if workdir else os.getcwd()+'/'
+        self.workdir = workdir + '/' if workdir else os.getcwd() + '/'
         self.uid = uid
-        self.ssp_output = self.uid+'_ssp'
-        self.csp_output = self.uid+'_csp'
+        self.ssp_output = self.uid + '_ssp'
+        self.csp_output = self.uid + '_csp'
         self.cleanup = cleanup
         self.verbose = verbose
 
@@ -134,15 +145,17 @@ class TemplateSED_BC03(object):
         that is supported by the specified library version. If sufficient SEDs can be
         generated then store the specified ages (units Gyr) internally.
         """
-        if   self.library_version==2003: self.age_limit = 24
-        elif self.library_version==2012 or self.library_version==2016: self.age_limit = 100
+        if self.library_version == 2003:
+            self.age_limit = 24
+        elif self.library_version == 2012 or self.library_version == 2016:
+            self.age_limit = 100
 
-        if not (isinstance(self.age,np.ndarray) or isinstance(self.age,list)):
+        if not (isinstance(self.age, np.ndarray) or isinstance(self.age, list)):
             self.ages = str(self.age)
-            self.age = np.array([self.age,])
+            self.age = np.array([self.age, ])
         elif len(self.age) <= self.age_limit:
             self.age = np.asarray(self.age)
-            self.ages = ','.join(np.round(self.age,6).astype(str))
+            self.ages = ','.join(np.round(self.age, 6).astype(str))
         else:
             raise Exception('Cannot provide more than %i ages!' % self.age_limit)
 
@@ -151,50 +164,52 @@ class TemplateSED_BC03(object):
         Validate constructor arguments.
         """
         if any(self.age > 13.5):
-            raise Exception("SED age (%s) provided is older than the Universe (13.5 Gyr)!" % str(self.age))
+            raise Exception(
+                "SED age (%s) provided is older than the Universe (13.5 Gyr)!" % str(self.age))
         if self.sfh not in self.sfh_key.keys():
-            raise Exception("Incorrect SFH provided: "+str(self.sfh)+"\n" \
-                            "Please choose from:"+str(self.sfh_key.keys()))
+            raise Exception("Incorrect SFH provided: " + str(self.sfh) + "\n"
+                            "Please choose from:" + str(self.sfh_key.keys()))
         if self.metallicity not in self.metallicity_key.keys():
-            raise Exception("Incorrect metallicity provided: "+str(self.metallicity)+"\n" \
-                            "Please choose from:"+str(self.metallicity_key.keys()))
+            raise Exception("Incorrect metallicity provided: " + str(self.metallicity) + "\n"
+                            "Please choose from:" + str(self.metallicity_key.keys()))
         if self.imf not in self.imf_dir_key.keys():
-            raise Exception("Incorrect IMF provided: "+str(self.imf)+"\n" \
-                            "Please choose from:"+str(self.imf_dir_key.keys()))
-        if self.res not in ['hr','lr']:
-            raise Exception("Incorrect resolution provided: "+str(self.res)+"\n" \
+            raise Exception("Incorrect IMF provided: " + str(self.imf) + "\n"
+                            "Please choose from:" + str(self.imf_dir_key.keys()))
+        if self.res not in ['hr', 'lr']:
+            raise Exception("Incorrect resolution provided: " + str(self.res) + "\n"
                             "Please choose from: 'hr','lr'")
-        if self.units not in ['flambda','fnu']:
-            raise Exception("Incorrect flux units provided: "+str(self.units)+"\n" \
+        if self.units not in ['flambda', 'fnu']:
+            raise Exception("Incorrect flux units provided: " + str(self.units) + "\n"
                             "Please choose from: 'flambda','fnu'")
-        if self.dust not in ['none','calzetti','cardelli']:
-            raise Exception("Incorrect dust law provided: "+str(self.dust)+"\n" \
+        if self.dust not in ['none', 'calzetti', 'cardelli']:
+            raise Exception("Incorrect dust law provided: " + str(self.dust) + "\n"
                             "Please choose from: 'none','calzetti','cardelli'")
         if self.redshift is not None and self.redshift < 0:
-            raise Exception("Incorrect redshift provided: "+str(self.redshift)+"\n" \
+            raise Exception("Incorrect redshift provided: " + str(self.redshift) + "\n"
                             "Please provide a positive value.")
         if self.redshift is None and self.igm:
             warnings.warn("No redshift provided, and thus IGM attentuation cannot be applied.")
-        if self.library_version not in [2003,2012,2016]:
-            raise Exception("Invalid library_version: "+str(self.library_version)+"\n" \
+        if self.library_version not in [2003, 2012, 2016]:
+            raise Exception("Invalid library_version: " + str(self.library_version) + "\n"
                             "Please choose from: 2003,2012,2016")
-        if self.library not in ['stelib','BaSeL', 'xmiless']:
-            raise Exception("Incorrect library choice: "+str(self.library)+"\n" \
+        if self.library not in ['stelib', 'BaSeL', 'xmiless']:
+            raise Exception("Incorrect library choice: " + str(self.library) + "\n"
                             "Please choose from: 'stelib','BaSeL', 'xmiless'")
 
     def define_env(self):
 
-        self.env_string = "export FILTERS="+self.rootdir+"src/FILTERBIN.RES;" \
-                          "export A0VSED="+self.rootdir+"src/A0V_KURUCZ_92.SED;" \
-                          "export RF_COLORS_ARRAYS="+self.rootdir+"src/RF_COLORS.filters;"
-        if self.library_version == 2012 or self.library_version == 2016 :
-            self.env_string += "export SUNSED="+self.rootdir+"src/SUN_KURUCZ_92.SED;"
+        self.env_string = "export FILTERS=" + self.rootdir + "src/FILTERBIN.RES;" \
+                          "export A0VSED=" + self.rootdir + "src/A0V_KURUCZ_92.SED;" \
+                          "export RF_COLORS_ARRAYS=" + self.rootdir + "src/RF_COLORS.filters;"
+        if self.library_version == 2012 or self.library_version == 2016:
+            self.env_string += "export SUNSED=" + self.rootdir + "src/SUN_KURUCZ_92.SED;"
 
-    def del_file(self,f):
+    def del_file(self, f):
         """
         Helper to safely delete files during cleanup.
         """
-        if os.path.isfile(f): os.remove(f)
+        if os.path.isfile(f):
+            os.remove(f)
 
     def generate_sed(self):
         """
@@ -206,18 +221,24 @@ class TemplateSED_BC03(object):
 
         #
         self.do_csp()
-        if self.cleanup: self.csp_cleanup()
+        if self.cleanup:
+            self.csp_cleanup()
 
         self.do_gpl()
-        if self.cleanup: self.gpl_cleanup()
+        if self.cleanup:
+            self.gpl_cleanup()
 
         self.read_gpl()
-        if self.cleanup: self.post_gpl_cleanup()
+        if self.cleanup:
+            self.post_gpl_cleanup()
 
-        if self.emlines: self.add_emlines()
-        if self.dust:    self.add_dust()
+        if self.emlines:
+            self.add_emlines()
+        if self.dust:
+            self.add_dust()
 
-        if self.redshift: self.redshift_evo()
+        if self.redshift:
+            self.redshift_evo()
 
     def do_bin_ised(self):
         """
@@ -225,21 +246,21 @@ class TemplateSED_BC03(object):
         (the SEDs are provided as ASCII files) execute the bin_ised utility to convert them
         to a binary format.
         """
-        if os.path.isfile(self.model_dir+self.input_ised+'.ised'):
-            shutil.copyfile(self.model_dir+self.input_ised+'.ised',
-                            self.workdir+self.ssp_output+'.ised')
-        elif os.path.isfile(self.model_dir+self.input_ised+'.ised_ASCII'):
-            shutil.copyfile(self.model_dir+self.input_ised+'.ised_ASCII',
-                            self.workdir+self.ssp_output+'.ised_ASCII')
+        if os.path.isfile(self.model_dir + self.input_ised + '.ised'):
+            shutil.copyfile(self.model_dir + self.input_ised + '.ised',
+                            self.workdir + self.ssp_output + '.ised')
+        elif os.path.isfile(self.model_dir + self.input_ised + '.ised_ASCII'):
+            shutil.copyfile(self.model_dir + self.input_ised + '.ised_ASCII',
+                            self.workdir + self.ssp_output + '.ised_ASCII')
             if self.verbose:
-                subprocess.call(self.rootdir+'src/bin_ised '+self.ssp_output+'.ised_ASCII',
+                subprocess.call(self.rootdir + 'src/bin_ised ' + self.ssp_output + '.ised_ASCII',
                                 cwd=self.workdir, shell=True)
             else:
-                subprocess.call(self.rootdir+'src/bin_ised '+self.ssp_output+'.ised_ASCII',
-                                cwd=self.workdir, shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-            self.del_file(self.workdir+self.ssp_output+'.ised_ASCII')
+                subprocess.call(self.rootdir + 'src/bin_ised ' + self.ssp_output + '.ised_ASCII',
+                                cwd=self.workdir, shell=True, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+            self.del_file(self.workdir + self.ssp_output + '.ised_ASCII')
         else:
-            raise Exception('Template %s not found in %s.' % (self.input_ised,self.model_dir))
+            raise Exception('Template %s not found in %s.' % (self.input_ised, self.model_dir))
 
     def mk_csp_input(self):
         """
@@ -263,13 +284,13 @@ class TemplateSED_BC03(object):
         This utility actually computes the spectral evolution of composite stellar
         populations.
         """
-        csp_input_string =  self.csp_input['CSPINPUT'] + '\n'
-        csp_input_string += self.csp_input['DUST'] +  '\n'
-        if self.library_version==2012 or self.library_version==2016:
-            csp_input_string += self.csp_input['REDSHIFT'] +  '\n'
+        csp_input_string = self.csp_input['CSPINPUT'] + '\n'
+        csp_input_string += self.csp_input['DUST'] + '\n'
+        if self.library_version == 2012 or self.library_version == 2016:
+            csp_input_string += self.csp_input['REDSHIFT'] + '\n'
         csp_input_string += self.csp_input['SFHCODE'] + '\n'
 
-        if   self.sfh == 'ssp':
+        if self.sfh == 'ssp':
             pass
         elif self.sfh == 'exp':
             csp_input_string += self.csp_input['TAU'] + '\n'
@@ -286,47 +307,48 @@ class TemplateSED_BC03(object):
         csp_input_string += self.csp_input['CSPOUTPUT'] + '\n'
 
         if self.verbose:
-            print ('Input parameters for csp_galaxev:')
-            for key, value in self.csp_input.items() :
-                print ('{} => {}'.format(key, value))
+            print('Input parameters for csp_galaxev:')
+            for key, value in self.csp_input.items():
+                print('{} => {}'.format(key, value))
             print('\n')
 
-        with open(self.workdir+self.uid+'_csp.in','w') as f: f.write(csp_input_string)
+        with open(self.workdir + self.uid + '_csp.in', 'w') as f:
+            f.write(csp_input_string)
         if self.verbose:
-            subprocess.call(self.env_string+self.rootdir+'src/csp_galaxev < '+self.uid+'_csp.in',
+            subprocess.call(self.env_string + self.rootdir + 'src/csp_galaxev < ' + self.uid + '_csp.in',
                             cwd=self.workdir, shell=True)
         else:
-            subprocess.call(self.env_string+self.rootdir+'src/csp_galaxev < '+self.uid+'_csp.in',
-                            cwd=self.workdir, shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-        self.del_file(self.workdir+self.uid+'_csp.in')
+            subprocess.call(self.env_string + self.rootdir + 'src/csp_galaxev < ' + self.uid + '_csp.in',
+                            cwd=self.workdir, shell=True, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        self.del_file(self.workdir + self.uid + '_csp.in')
 
     def csp_cleanup(self):
         """
         Remove any non-essential files that were generated by the csp (csp_galexev)
         utility.
         """
-        self.del_file(self.workdir+self.csp_output+'.1ABmag')
-        self.del_file(self.workdir+self.csp_output+'.1color')
-        self.del_file(self.workdir+self.csp_output+'.2color')
-        self.del_file(self.workdir+self.csp_output+'.5color')
-        self.del_file(self.workdir+self.csp_output+'.6lsindx_ffn')
-        self.del_file(self.workdir+self.csp_output+'.6lsindx_sed')
-        self.del_file(self.workdir+self.csp_output+'.6lsindx_sed_lick_system')
-        self.del_file(self.workdir+self.csp_output+'.7lsindx_ffn')
-        self.del_file(self.workdir+self.csp_output+'.7lsindx_sed')
-        self.del_file(self.workdir+self.csp_output+'.7lsindx_sed_lick_system')
-        self.del_file(self.workdir+self.csp_output+'.8lsindx_sed_fluxes')
-        self.del_file(self.workdir+'bc03.rm')
+        self.del_file(self.workdir + self.csp_output + '.1ABmag')
+        self.del_file(self.workdir + self.csp_output + '.1color')
+        self.del_file(self.workdir + self.csp_output + '.2color')
+        self.del_file(self.workdir + self.csp_output + '.5color')
+        self.del_file(self.workdir + self.csp_output + '.6lsindx_ffn')
+        self.del_file(self.workdir + self.csp_output + '.6lsindx_sed')
+        self.del_file(self.workdir + self.csp_output + '.6lsindx_sed_lick_system')
+        self.del_file(self.workdir + self.csp_output + '.7lsindx_ffn')
+        self.del_file(self.workdir + self.csp_output + '.7lsindx_sed')
+        self.del_file(self.workdir + self.csp_output + '.7lsindx_sed_lick_system')
+        self.del_file(self.workdir + self.csp_output + '.8lsindx_sed_fluxes')
+        self.del_file(self.workdir + 'bc03.rm')
 
-        if self.library_version==2012 or self.library_version==2016:
-            self.del_file(self.workdir+self.csp_output+'.9color')
-            self.del_file(self.workdir+self.csp_output+'.acs_wfc_color')
-            self.del_file(self.workdir+self.csp_output+'.legus_uvis1_color')
-            self.del_file(self.workdir+self.csp_output+'.wfc3_color')
-            self.del_file(self.workdir+self.csp_output+'.wfc3_uvis1_color')
-            self.del_file(self.workdir+self.csp_output+'.wfpc2_johnson_color')
-            self.del_file(self.workdir+self.csp_output+'.w_age_rf')
-            self.del_file(self.workdir+'fort.24')
+        if self.library_version == 2012 or self.library_version == 2016:
+            self.del_file(self.workdir + self.csp_output + '.9color')
+            self.del_file(self.workdir + self.csp_output + '.acs_wfc_color')
+            self.del_file(self.workdir + self.csp_output + '.legus_uvis1_color')
+            self.del_file(self.workdir + self.csp_output + '.wfc3_color')
+            self.del_file(self.workdir + self.csp_output + '.wfc3_uvis1_color')
+            self.del_file(self.workdir + self.csp_output + '.wfpc2_johnson_color')
+            self.del_file(self.workdir + self.csp_output + '.w_age_rf')
+            self.del_file(self.workdir + 'fort.24')
 
     def mk_gpl_input(self):
         """
@@ -334,48 +356,51 @@ class TemplateSED_BC03(object):
         """
         self.gpl_input = {}
         self.gpl_input['GPLINPUT'] = self.csp_output
-        if   self.units == 'flambda':  self.gpl_input['W1W2W0F0Z'] =  str(self.W1)+','+str(self.W2)
-        elif self.units == 'fnu':      self.gpl_input['W1W2W0F0Z'] = str(-self.W1)+','+str(self.W2)
+        if self.units == 'flambda':
+            self.gpl_input['W1W2W0F0Z'] = str(self.W1) + ',' + str(self.W2)
+        elif self.units == 'fnu':
+            self.gpl_input['W1W2W0F0Z'] = str(-self.W1) + ',' + str(self.W2)
         self.gpl_input['AGES'] = self.ages
-        self.gpl_input['GPLOUTPUT'] = self.csp_output+'.spec'
+        self.gpl_input['GPLOUTPUT'] = self.csp_output + '.spec'
 
     def do_gpl(self):
         """
         Synthesize and invoke the command line for the gpl (galaxevpl) utility.
         """
-        gpl_input_string =  self.gpl_input['GPLINPUT'] + '\n'
+        gpl_input_string = self.gpl_input['GPLINPUT'] + '\n'
 
-        if self.library_version==2003:
+        if self.library_version == 2003:
             gpl_input_string += self.gpl_input['W1W2W0F0Z'] + '\n'
             gpl_input_string += self.gpl_input['AGES'] + '\n'
-        elif self.library_version==2012 or self.library_version==2016:
+        elif self.library_version == 2012 or self.library_version == 2016:
             gpl_input_string += self.gpl_input['AGES'] + '\n'
             gpl_input_string += self.gpl_input['W1W2W0F0Z'] + '\n'
 
         gpl_input_string += self.gpl_input['GPLOUTPUT'] + '\n'
 
         if self.verbose:
-            print ('Input string for galaxevpl:')
-            for key, value in self.gpl_input.items() :
-                print ('{} => {}'.format(key, value))
+            print('Input string for galaxevpl:')
+            for key, value in self.gpl_input.items():
+                print('{} => {}'.format(key, value))
             print('\n')
 
-        with open(self.workdir+self.uid+'_gpl.in','w') as f: f.write(gpl_input_string)
+        with open(self.workdir + self.uid + '_gpl.in', 'w') as f:
+            f.write(gpl_input_string)
         if self.verbose:
-            subprocess.call(self.rootdir+'src/galaxevpl < '+self.uid+'_gpl.in',
+            subprocess.call(self.rootdir + 'src/galaxevpl < ' + self.uid + '_gpl.in',
                             cwd=self.workdir, shell=True)
         else:
-            subprocess.call(self.rootdir+'src/galaxevpl < '+self.uid+'_gpl.in',
-                            cwd=self.workdir, shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-        self.del_file(self.workdir+self.uid+'_gpl.in')
+            subprocess.call(self.rootdir + 'src/galaxevpl < ' + self.uid + '_gpl.in',
+                            cwd=self.workdir, shell=True, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        self.del_file(self.workdir + self.uid + '_gpl.in')
 
     def gpl_cleanup(self):
         """
         Remove any non-essential files that were generated by the gpl (galaxevpl)
         utility.
         """
-        self.del_file(self.workdir+self.ssp_output+'.ised')
-        self.del_file(self.workdir+self.csp_output+'.ised')
+        self.del_file(self.workdir + self.ssp_output + '.ised')
+        self.del_file(self.workdir + self.csp_output + '.ised')
 
     def read_gpl(self):
         """
@@ -387,22 +412,27 @@ class TemplateSED_BC03(object):
         specified upon construction.
         """
         # define column names and data types for extraction of synthetic spectra
-        dtype = [('observed_wavelength',float),]+[('spec{}'.format(i+1),float) for i in range(len(self.age))]
+        dtype = [('observed_wavelength', float), ] + [('spec{}'.format(i + 1), float)
+                                                      for i in range(len(self.age))]
         # Extract the synthetic sperctra that were generated for the specified post-starburst ages
-        self.sed = np.genfromtxt(self.workdir+self.csp_output+'.spec',dtype=dtype)
-        # Extract the log of the rate of H-ionizing photons (in Hz) for the synthetic spectra as a function of post-starburst age
-        age3, Q = np.genfromtxt(self.workdir+self.csp_output+'.3color', usecols=(0,5), unpack=True)
-        # Extract the appropriate normalization factor for the synthetic spectra as a function of post-starburst age
-        age4, M = np.genfromtxt(self.workdir+self.csp_output+'.4color', usecols=(0,6), unpack=True)
+        self.sed = np.genfromtxt(self.workdir + self.csp_output + '.spec', dtype=dtype)
+        # Extract the log of the rate of H-ionizing photons (in Hz) for the
+        # synthetic spectra as a function of post-starburst age
+        age3, Q = np.genfromtxt(self.workdir + self.csp_output +
+                                '.3color', usecols=(0, 5), unpack=True)
+        # Extract the appropriate normalization factor for the synthetic spectra
+        # as a function of post-starburst age
+        age4, M = np.genfromtxt(self.workdir + self.csp_output +
+                                '.4color', usecols=(0, 6), unpack=True)
 
         # Loop over union of synthetic spectra labels and the ages for which they were generated
-        for x,age in zip(self.sed.dtype.names[1:],self.age):
+        for x, age in zip(self.sed.dtype.names[1:], self.age):
 
             # scale from solar units to erg/s/Å
             self.sed[x] = self.sed[x] * 3.839e33
 
             # compute the log of the age in years
-            log_age = np.log10(age*1e9)
+            log_age = np.log10(age * 1e9)
             diff = abs(age3 - log_age)
             # store the closest log of the rate of H-ionizing photons (in Hz) for a synthetic
             # spectrum with an age equal to that currently under consideration.
@@ -415,54 +445,65 @@ class TemplateSED_BC03(object):
 
     def post_gpl_cleanup(self):
 
-        os.unlink(self.workdir+self.csp_output+'.spec')
-        os.unlink(self.workdir+self.csp_output+'.3color')
-        os.unlink(self.workdir+self.csp_output+'.4color')
+        os.unlink(self.workdir + self.csp_output + '.spec')
+        os.unlink(self.workdir + self.csp_output + '.3color')
+        os.unlink(self.workdir + self.csp_output + '.4color')
 
     def add_emlines(self):
 
         for x in self.sed.dtype.names[1:]:
-            self.sed[x] = add_emission_lines(self.sed['observed_wavelength'], self.sed[x], self.Q[x], self.metallicity, self.units)
+            self.sed[x] = add_emission_lines(self.sed['observed_wavelength'], self.sed[
+                                             x], self.Q[x], self.metallicity, self.units)
 
     def add_dust(self):
 
         for x in self.sed.dtype.names[1:]:
-            if   self.dust == 'calzetti':
-                self.sed[x] = self.sed[x] * np.exp(-calzetti(self.sed['observed_wavelength'], self.Av))
+            if self.dust == 'calzetti':
+                self.sed[x] = self.sed[x] * \
+                    np.exp(-calzetti(self.sed['observed_wavelength'], self.Av))
             elif self.dust == 'cardelli':
-                self.sed[x] = self.sed[x] * np.exp(-cardelli(self.sed['observed_wavelength'], self.Av))
+                self.sed[x] = self.sed[x] * \
+                    np.exp(-cardelli(self.sed['observed_wavelength'], self.Av))
 
     def redshift_evo(self):
 
-        self.sed['observed_wavelength'] *= (1+self.redshift)
+        self.sed['observed_wavelength'] *= (1 + self.redshift)
         if self.igm:
             for x in self.sed.dtype.names[1:]:
-                self.sed[x] = self.sed[x] * np.exp(-inoue_tau(self.sed['observed_wavelength'], self.redshift))
+                self.sed[x] = self.sed[x] * \
+                    np.exp(-inoue_tau(self.sed['observed_wavelength'], self.redshift))
 
-    def plot_sed(self,save=None):
+    def plot_sed(self, save=None):
 
-        fig, ax = plt.subplots(1,1,figsize=(15,8),dpi=75,tight_layout=True)
+        fig, ax = plt.subplots(1, 1, figsize=(15, 8), dpi=75, tight_layout=True)
 
-        colors = plt.cm.gist_rainbow_r(np.linspace(0.1,0.95,len(self.sed.dtype.names[1:])))
-        for age,x,c in zip(self.age,self.sed.dtype.names[1:],colors):
-            ax.plot(self.sed['observed_wavelength'],self.sed[x],c=c,lw=1.5,alpha=0.8,label="Age = %.3f Gyr" % age)
+        colors = plt.cm.gist_rainbow_r(np.linspace(0.1, 0.95, len(self.sed.dtype.names[1:])))
+        for age, x, c in zip(self.age, self.sed.dtype.names[1:], colors):
+            ax.plot(self.sed['observed_wavelength'], self.sed[x], c=c,
+                    lw=1.5, alpha=0.8, label="Age = %.3f Gyr" % age)
 
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_xlabel('Rest-frame Wavelength ($\AA$)')
-        if self.units == 'flambda': ax.set_ylabel(r'F$_\lambda$ [ergs/s/$\AA$]')
-        elif self.units == 'fnu':   ax.set_ylabel(r'F$_\nu$ [ergs/s/Hz]')
+        if self.units == 'flambda':
+            ax.set_ylabel(r'F$_\lambda$ [ergs/s/$\AA$]')
+        elif self.units == 'fnu':
+            ax.set_ylabel(r'F$_\nu$ [ergs/s/Hz]')
 
         title = "BC2003 SED -- " \
-                "IMF="+self.imf_dir_key[self.imf]+", " \
-                "Z="+str(self.metallicity)+", " \
-                "SFH="+self.sfh+", "
-        if self.sfh == 'exp': title += r"$\tau$="+str(self.tau)+", "
-        if self.sfh == 'single': title += r"$\Delta$="+str(self.tau)+", "
-        title += "Av="+str(self.Av)+", " if self.dust else "Av=0, "
-        title += "EmLines="+str(self.emlines)
+                "IMF=" + self.imf_dir_key[self.imf] + ", " \
+                "Z=" + str(self.metallicity) + ", " \
+                "SFH=" + self.sfh + ", "
+        if self.sfh == 'exp':
+            title += r"$\tau$=" + str(self.tau) + ", "
+        if self.sfh == 'single':
+            title += r"$\Delta$=" + str(self.tau) + ", "
+        title += "Av=" + str(self.Av) + ", " if self.dust else "Av=0, "
+        title += "EmLines=" + str(self.emlines)
 
         ax.set_title(title)
         ax.legend(fontsize=16)
-        if save: fig.savefig(save)
-        else: plt.show()
+        if save:
+            fig.savefig(save)
+        else:
+            plt.show()
