@@ -4,13 +4,25 @@ import os
 
 extractBC03Root = os.getenv('BC03ROOT', '.')
 
-line_ratios = pyfits.getdata(extractBC03Root + '/emline_ratios.fits')
+line_ratio_file = extractBC03Root + '/emline_ratios.fits'
+line_ratios = pyfits.getdata(line_ratio_file)
 
 # ADD EMISSION LINES
 
 
-def add_emission_lines(sed_waves, sed_spec, Q, metallicity, units):
+def print_available_lines():
+    lineRatioHdus = pyfits.open(line_ratio_file)
+    print(lineRatioHdus[1].data.columns)
 
+
+def add_emission_lines(sed_waves, sed_spec, Q, metallicity, units):
+    """
+    sed_waves - is the array of wavelengths.
+    sed_spec - is the array of spectrum values.
+    Q - is the log of the rate of H-ionizing photons (in Hz) for the galaxy spectrum.
+    metallicity - is the metallicity in solar units.
+    units - determines whether the spectrum is specified in wavelength or frequency space.
+    """
     l_hb = 4861.
     l_ha = 6563.
     l_lya = 1216.
