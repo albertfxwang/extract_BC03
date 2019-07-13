@@ -1,9 +1,10 @@
 import numpy as np
 import os
 
-extractBC03Root = os.getenv('BC03ROOT', '.')
+# extractBC03Root = os.getenv('BC03ROOT', '.')
+extractBC03Root = os.path.expanduser('~/Dropbox/Python/extract_BC03')
 
-inoue_coeffs = np.genfromtxt(extractBC03Root + '/inoue_coeffs.dat', dtype=[('j', int), ('lambda', float), (
+inoue_coeffs = np.genfromtxt(os.path.join(extractBC03Root,'inoue_coeffs.dat'), dtype=[('j', int), ('lambda', float), (
     'A1_LAF', float), ('A2_LAF', float), ('A3_LAF', float), ('A1_DLA', float), ('A2_DLA', float)], unpack=True)
 
 # INOUE IGM ATTENUATION

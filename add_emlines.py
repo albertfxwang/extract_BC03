@@ -2,9 +2,10 @@ import astropy.io.fits as pyfits
 import numpy as np
 import os
 
-extractBC03Root = os.getenv('BC03ROOT', '.')
+# extractBC03Root = os.getenv('BC03ROOT', '.')
+extractBC03Root = os.path.expanduser('~/Dropbox/Python/extract_BC03')
 
-line_ratio_file = extractBC03Root + '/emline_ratios.fits'
+line_ratio_file = os.path.join(extractBC03Root,'emline_ratios.fits')
 line_ratios = pyfits.getdata(line_ratio_file)
 
 # ADD EMISSION LINES
