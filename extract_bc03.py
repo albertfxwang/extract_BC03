@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 from dust_extinction import calzetti, cardelli
-from add_emlines import add_emission_lines
+from add_emlines import add_emission_lines, print_available_lines
 from igm_attenuation import inoue_tau
 
 rootdir = '/Users/albert/local/bc03/'
@@ -21,31 +21,30 @@ class TemplateSED_BC03(object):
     #       for the Padova2000 tracks, the metallicities are denoted by m122, m132, etc.
     #       for the Geneva1994 tracks, only the solar metallicities (i.e. m62) track models are provided
 
-    sfh_key = {'ssp': 0, 'exp': 1, 'single': 2, 'constant': 3}
+    sfh_key = {'ssp': 0, 'exp': 1, 'single': 2, 'constant': 3, 'custom':6}
     library_atlas_key = {'stelib': 'Stelib_Atlas',
                          'BaSeL': 'BaSeL3.1_Atlas',
                          'xmiless': 'Miles_Atlas'}
     imf_dir_key = {'salp': 'salpeter', 'chab': 'chabrier', 'kroup': 'kroupa'}
 
-    def __init__(self,
-                 age, sfh, metallicity=None, input_ised=None, input_sfh=None,
+    def __init__(self, metallicity, age, sfh, input_ised=None, input_sfh=None,
                  tau=None, Av=None, emlines=False, dust='calzetti',
                  redshift=None, igm=True,
                  sfr=1, gasrecycle=False, epsilon=0.001, tcutsfr=20,
                  units='flambda', W1=1, W2=1e7,
                  lya_esc=0.2, lyc_esc=0,
                  imf='chab', res='hr', uid=None,
-                 rootdir=rootdir, modelsdir=modelsdir, library_version=2003, library='stelib',
-                 workdir=None, cleanup=True, del_input=False, verbose=True):
+                 rootdir=rootdir, modelsdir=modelsdir, library_version=2012, library='stelib',
+                 workdir=None, cleanup=True, del_input=True, verbose=True):
         """
         metallicity:     0.0001(m22), 0.0004(m32), 0.004(m42), 0.008(m52), 0.02(m62), 0.05(m72) [BC2003 option]
-        age:             0 < age < 13.5 Gyr [BC2003 option]
+        age:             0 < age < 13.8 Gyr [BC2003 option]
         sfh:             Star formation history [BC2003 option]
                             - 'constant':   constant SFR (requires SFR, TCUTSFR)
                             - 'exp':        exponentially declining  (requires TAU, TCUTSFR, GASRECYCLE[, EPSILON])
                             - 'ssp':        single stellar pop
                             - 'single':     single burst  (requires TAU - length of burst)
-                            - 'custom':     custom SFH file (two column file -- col#1: age [yr]; col#2: SFR [Mo/yr])    NOTE: not yet implemented
+                            - 'custom':     custom SFH file (two column file -- col#1: age [yr]; col#2: SFR [Mo/yr])
         tau:             e-folding timescale for exponentially declining SFH [BC2003 option]
         Av:              dust content (A_v)
         emlines:         adds emission lines
@@ -205,7 +204,7 @@ class TemplateSED_BC03(object):
         if self.units not in ['flambda', 'fnu']:
             raise Exception("Incorrect flux units provided: " + str(self.units) + "\n"
                             "Please choose from: 'flambda','fnu'")
-        if self.dust not in ['None', 'calzetti', 'cardelli']:
+        if self.dust not in ['calzetti', 'cardelli', None]:
             raise Exception("Incorrect dust law provided: " + str(self.dust) + "\n"
                             "Please choose from: 'none','calzetti','cardelli'")
         if self.redshift is not None and self.redshift < 0:
@@ -216,7 +215,7 @@ class TemplateSED_BC03(object):
         if self.library_version not in [2003, 2012, 2016]:
             raise Exception("Invalid library_version: " + str(self.library_version) + "\n"
                             "Please choose from: 2003, 2012, 2016")
-        if self.library not in ['stelib', 'BaSeL', 'xmiless', 'None']:
+        if self.library not in ['stelib', 'BaSeL', 'xmiless', None]:
             raise Exception("Incorrect library choice: " + str(self.library) + "\n"
                             "Please choose from: 'stelib','BaSeL', 'xmiless'")
 
@@ -480,7 +479,7 @@ class TemplateSED_BC03(object):
         os.unlink(self.workdir + self.csp_output + '.4color')
 
     def add_emlines(self):
-
+        if self.verbose: print_available_lines()
         for x in self.sed.dtype.names[1:]:
             self.sed[x] = add_emission_lines(self.sed['wave'], self.sed[x], self.Q[x], self.metallicity, self.units, lya_esc=self.lya_esc)
 
