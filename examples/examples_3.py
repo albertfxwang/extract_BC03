@@ -1,6 +1,7 @@
 from importlib import reload
 import numpy as np
 import extract_bc03 as bc03; reload(bc03)
+import grismreductxin as grx; reload(grx)
 
 workdir = '/Users/albert/workplace/learnBC03/'
 metal = [0.0001, 0.0004, 0.004, 0.008, 0.02, 0.05]
@@ -16,12 +17,15 @@ lyc_esc=1.
 
 for ii, m in enumerate(metal):
     for Av in Av_vals:
+        uid = 'bc2012_BaSel_ssp_chab_'+metal_str[ii]+'_Av'+str(int(Av))
         template = bc03.TemplateSED_BC03(metallicity=m, age=age, sfh='ssp', tau=None, Av=Av,
-                                         dust='calzetti', emlines=True,
-                                         redshift=None, uid='bc2012_BaSel_ssp_chab_'+metal_str[ii]+'_Av'+str(int(Av)),
+                                         dust='calzetti', emlines=False,
+                                         redshift=None, uid=uid,
                                          igm=True, imf='chab', res='lr', units='flambda',
                                          workdir=workdir, lya_esc=lya_esc, lyc_esc=lyc_esc,
                                          library_version=2012, library='BaSeL',
                                          cleanup=False, del_input=True, verbose=True)
         template.generate_sed()
+        # NOTE: these SED are in units of erg/s/Ang ! (so no need to multiply Lsun any more!)
+        grx.save_sample(template.sed, uid+'.spec')
 

@@ -1,4 +1,4 @@
-import os
+import os, sys
 import shutil
 import subprocess
 import numpy as np
@@ -492,6 +492,8 @@ class TemplateSED_BC03(object):
             elif self.dust == 'cardelli':
                 self.sed[x] = self.sed[x] * \
                     np.exp(-cardelli(self.sed['wave'], self.Av))
+            else:
+                sys.exit(' ERR: keyword options not supported')
 
     def redshift_evo(self):
 
